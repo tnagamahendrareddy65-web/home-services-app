@@ -6,9 +6,9 @@ import { NextResponse } from "next/server";
 export async function POST(request) {
   try {
     const connectionString = process.env.DATABASE_URL;
-    if (!connectionString) {
+    if (!connectionString || connectionString.includes("example.com")) {
       return NextResponse.json(
-        { error: "Configuration Error: DATABASE_URL environment variable is missing on Vercel. Please add it in your Vercel Project Settings > Environment Variables." },
+        { error: "DATABASE_URL is not configured properly in Vercel. Please update it in Vercel settings." },
         { status: 500 }
       );
     }
