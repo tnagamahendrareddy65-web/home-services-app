@@ -38,6 +38,9 @@ export default async function RegisterPage({ searchParams }) {
           data: { name, email, password },
         });
       }
+    } catch (err) {
+      console.error("CRITICAL AUTH ERROR:", err);
+      throw err;
     } finally {
       await prisma.$disconnect();
       await pool.end();
