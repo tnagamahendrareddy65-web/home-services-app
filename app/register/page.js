@@ -17,8 +17,9 @@ export default async function RegisterPage({ searchParams }) {
       redirect("/register?error=Email+and+password+are+required.");
     }
 
-    const prisma = new PrismaClient();
+    let redirectUrl = `/?user=${encodeURIComponent(email)}`;
 
+    const prisma = new PrismaClient();
     try {
       const existingUser = await prisma.user.findUnique({
         where: { email },
@@ -26,27 +27,28 @@ export default async function RegisterPage({ searchParams }) {
 
       if (existingUser) {
         if (existingUser.password !== password) {
-          redirect("/register?error=Incorrect+password.+Please+try+again.");
+          redirectUrl = "/register?error=Incorrect+password.+Please+try+again.";
         }
       } else {
         if (!name) {
-          redirect("/register?error=Name+is+required+for+new+accounts.");
+          redirectUrl = "/register?error=Name+is+required+for+new+accounts.";
+        } else {
+          await prisma.user.create({
+            data: { name, email, password },
+          });
         }
-        await prisma.user.create({
-          data: { name, email, password },
-        });
       }
     } catch (err) {
-      if (err.message?.includes("NEXT_REDIRECT")) {
+      console.error("SERVER ACTION ERROR:", err);
+      if (err?.message?.includes("NEXT_REDIRECT")) {
         throw err;
       }
-      console.error("DB_ERROR_DETAIL:", err);
-      redirect(`/register?error=${encodeURIComponent(err.code ? `DB Error (${err.code}): ${err.message}` : err.message)}`);
+      redirectUrl = `/register?error=${encodeURIComponent(err.message || "Database connection error")}`;
     } finally {
       await prisma.$disconnect();
     }
 
-    redirect(`/?user=${encodeURIComponent(email)}`);
+    redirect(redirectUrl);
   }
 
   return (
