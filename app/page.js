@@ -1,9 +1,13 @@
 import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-const prisma = new PrismaClient();
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 export default async function Home() {
   let services = [];
@@ -24,7 +28,10 @@ export default async function Home() {
 
     if (!name || !email || !serviceId || !date) return;
 
-    const db = new PrismaClient();
+    const dbPool = new Pool({ connectionString: process.env.DATABASE_URL });
+    const dbAdapter = new PrismaPg(dbPool);
+    const db = new PrismaClient({ adapter: dbAdapter });
+    
     await db.booking.create({
       data: {
         name,
@@ -33,6 +40,9 @@ export default async function Home() {
         date: new Date(date),
       },
     });
+
+    await db.$disconnect();
+    await dbPool.end();
 
     redirect("/?success=true");
   }
