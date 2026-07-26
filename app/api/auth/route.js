@@ -5,13 +5,10 @@ const prisma = new PrismaClient();
 
 export async function POST(request) {
   try {
-    const formData = await request.formData();
-    const name = formData.get("name") || "";
-    const email = formData.get("email");
-    const password = formData.get("password");
+    const { name, email, password } = await request.json();
 
     if (!email || !password) {
-      return NextResponse.redirect(new URL("/register?error=Email+and+password+are+required.", request.url), { status: 303 });
+      return NextResponse.json({ error: "Email and password are required." }, { status: 400 });
     }
 
     const existingUser = await prisma.user.findUnique({
@@ -20,21 +17,21 @@ export async function POST(request) {
 
     if (existingUser) {
       if (existingUser.password !== password) {
-        return NextResponse.redirect(new URL("/register?error=Incorrect+password.+Please+try+again.", request.url), { status: 303 });
+        return NextResponse.json({ error: "Incorrect password. Please try again." }, { status: 400 });
       }
     } else {
       if (!name) {
-        return NextResponse.redirect(new URL("/register?error=Name+is+required+for+new+accounts.", request.url), { status: 303 });
+        return NextResponse.json({ error: "Name is required for new accounts." }, { status: 400 });
       }
       await prisma.user.create({
         data: { name, email, password },
       });
     }
 
-    return NextResponse.redirect(new URL(/?user=, request.url), { status: 303 });
+    return NextResponse.json({ success: true, email });
   } catch (err) {
     console.error("API AUTH ERROR:", err);
-    return NextResponse.redirect(new URL(/register?error=, request.url), { status: 303 });
+    return NextResponse.json({ error: err.message || "Database error occurred." }, { status: 500 });
   } finally {
     await prisma.();
   }
