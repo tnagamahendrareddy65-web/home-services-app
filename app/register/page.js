@@ -3,10 +3,6 @@ import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-const globalForPrisma = global;
-const prisma = globalForPrisma.prisma || new PrismaClient();
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
-
 export default async function RegisterPage({ searchParams }) {
   const resolvedParams = await searchParams;
   const errorMsg = resolvedParams?.error;
@@ -20,6 +16,8 @@ export default async function RegisterPage({ searchParams }) {
     if (!email || !password) {
       redirect("/register?error=Email+and+password+are+required.");
     }
+
+    const prisma = new PrismaClient();
 
     try {
       const existingUser = await prisma.user.findUnique({
@@ -42,8 +40,10 @@ export default async function RegisterPage({ searchParams }) {
       if (err.message?.includes("NEXT_REDIRECT")) {
         throw err;
       }
-      console.error("CRITICAL DB ERROR:", err);
-      redirect(`/register?error=${encodeURIComponent(err.message || "Database error")}`);
+      console.error("DB_ERROR_DETAIL:", err);
+      redirect(`/register?error=${encodeURIComponent(err.code ? `DB Error (${err.code}): ${err.message}` : err.message)}`);
+    } finally {
+      await prisma.$disconnect();
     }
 
     redirect(`/?user=${encodeURIComponent(email)}`);
@@ -58,7 +58,7 @@ export default async function RegisterPage({ searchParams }) {
         </p>
 
         {errorMsg && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg text-center font-medium">
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg text-center font-medium break-words">
             {decodeURIComponent(errorMsg)}
           </div>
         )}
