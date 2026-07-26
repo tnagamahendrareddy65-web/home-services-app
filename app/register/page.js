@@ -6,8 +6,8 @@ import { redirect } from "next/navigation";
 export const dynamic = "force-dynamic";
 
 export default async function RegisterPage({ searchParams }) {
-  const params = await searchParams;
-  const errorMsg = params?.error;
+  const resolvedParams = await searchParams;
+  const errorMsg = resolvedParams?.error;
 
   async function handleAuth(formData) {
     "use server";
@@ -39,8 +39,11 @@ export default async function RegisterPage({ searchParams }) {
         });
       }
     } catch (err) {
-      console.error("CRITICAL AUTH ERROR:", err);
-      throw err;
+      if (err.message?.includes("NEXT_REDIRECT")) {
+        throw err; // Allow Next.js redirects to work normally
+      }
+      console.error("AUTH ERROR:", err);
+      redirect("/register?error=A+database+error+occurred.+Please+try+again.");
     } finally {
       await prisma.$disconnect();
       await pool.end();
