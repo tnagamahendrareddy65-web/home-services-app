@@ -33,6 +33,6 @@ export async function POST(request) {
     console.error("API AUTH ERROR:", err);
     return NextResponse.json({ error: err.message || "Database error occurred." }, { status: 500 });
   } finally {
-    await prisma.();
+    await prisma.\();
   }
 }
