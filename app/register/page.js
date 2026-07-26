@@ -87,7 +87,7 @@ export default async function RegisterPage({ searchParams }) {
               name="password"
               required
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-black"
-              placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+              placeholder="••••••••"
             />
           </div>
           <button
