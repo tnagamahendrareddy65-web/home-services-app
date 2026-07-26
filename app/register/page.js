@@ -1,14 +1,11 @@
 import { PrismaClient } from "@prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
-import { Pool } from "pg";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const adapter = new PrismaPg(pool);
-const prisma = global.prisma || new PrismaClient({ adapter });
-if (process.env.NODE_ENV !== "production") global.prisma = prisma;
+const globalForPrisma = global;
+const prisma = globalForPrisma.prisma || new PrismaClient();
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
 export default async function RegisterPage({ searchParams }) {
   const resolvedParams = await searchParams;
@@ -43,8 +40,8 @@ export default async function RegisterPage({ searchParams }) {
       if (err.message?.includes("NEXT_REDIRECT")) {
         throw err;
       }
-      console.error("AUTH ERROR:", err);
-      redirect("/register?error=A+database+error+occurred.+Please+try+again.");
+      console.error("CRITICAL DB ERROR:", err);
+      redirect(`/register?error=${encodeURIComponent(err.message || "Database error occurred")}`);
     }
 
     redirect(`/?user=${encodeURIComponent(email)}`);
