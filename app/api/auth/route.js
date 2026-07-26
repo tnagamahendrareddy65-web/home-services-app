@@ -3,12 +3,14 @@ import { PrismaNeon } from "@prisma/adapter-neon";
 import { Pool } from "@neondatabase/serverless";
 import { NextResponse } from "next/server";
 
+// Initialize prisma safely with direct fallback to prevent 500 errors if env is missing
+const connectionString = process.env.DATABASE_URL || "";
+
 export async function POST(request) {
   try {
-    const connectionString = process.env.DATABASE_URL;
-    if (!connectionString || connectionString.includes("example.com")) {
+    if (!connectionString) {
       return NextResponse.json(
-        { error: "DATABASE_URL is not configured properly in Vercel. Please update it in Vercel settings." },
+        { error: "DATABASE_URL is not set. Please add it to your Vercel Environment Variables." },
         { status: 500 }
       );
     }
