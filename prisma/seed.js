@@ -8,6 +8,8 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
+  console.log("Seeding database...");
+  
   // Clear existing data to avoid duplicates
   await prisma.booking.deleteMany();
   await prisma.service.deleteMany();
