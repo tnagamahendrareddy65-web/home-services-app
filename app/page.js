@@ -1,6 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 import { redirect } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 const prisma = new PrismaClient();
 
 export default async function Home() {
@@ -10,7 +12,7 @@ export default async function Home() {
       include: { category: true },
     });
   } catch (error) {
-    console.error("Failed to fetch services:", error);
+    console.error("Database connection error on Home page:", error);
   }
 
   async function handleBookService(formData) {
@@ -47,9 +49,10 @@ export default async function Home() {
         <section className="mb-12">
           <h2 className="text-2xl font-semibold text-gray-800 mb-6">Available Services</h2>
           {services.length === 0 ? (
-            <p className="text-gray-500 text-center bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-              Loading services or database needs seeding...
-            </p>
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 text-center">
+              <p className="text-red-500 font-medium">No services found in database.</p>
+              <p className="text-gray-500 text-sm mt-1">Please ensure your production database is seeded.</p>
+            </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {services.map((service) => (
