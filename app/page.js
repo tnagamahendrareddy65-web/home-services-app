@@ -5,11 +5,19 @@ import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+export default async function Home({ searchParams }) {
+  const params = await searchParams;
+  const userEmail = params?.user;
 
-export default async function Home() {
+  // If no user is registered/logged in, redirect them to sign up first
+  if (!userEmail) {
+    redirect("/register");
+  }
+
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const adapter = new PrismaPg(pool);
+  const prisma = new PrismaClient({ adapter });
+
   let services = [];
   try {
     services = await prisma.service.findMany({
@@ -17,16 +25,19 @@ export default async function Home() {
     });
   } catch (error) {
     console.error("Database connection error on Home page:", error);
+  } finally {
+    await prisma.$disconnect();
+    await pool.end();
   }
 
   async function handleBookService(formData) {
     "use server";
-    const name = formData.get("name");
-    const email = formData.get("email");
     const serviceId = formData.get("serviceId");
     const date = formData.get("date");
+    const name = formData.get("name");
+    const email = formData.get("email");
 
-    if (!name || !email || !serviceId || !date) return;
+    if (!serviceId || !date) return;
 
     const dbPool = new Pool({ connectionString: process.env.DATABASE_URL });
     const dbAdapter = new PrismaPg(dbPool);
@@ -34,8 +45,8 @@ export default async function Home() {
     
     await db.booking.create({
       data: {
-        name,
-        email,
+        name: name || "Registered User",
+        email: email || userEmail,
         serviceId,
         date: new Date(date),
       },
@@ -44,15 +55,23 @@ export default async function Home() {
     await db.$disconnect();
     await dbPool.end();
 
-    redirect("/?success=true");
+    redirect(`/?user=${encodeURIComponent(userEmail)}&success=true`);
   }
 
   return (
     <main className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-4xl mx-auto">
-        <header className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-blue-600 mb-2">Home Services Platform</h1>
-          <p className="text-gray-600">Reliable home cleaning, plumbing, and repair services at your doorstep.</p>
+        <header className="flex justify-between items-center mb-12 bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+          <div>
+            <h1 className="text-3xl font-bold text-blue-600">Home Services Platform</h1>
+            <p className="text-gray-600 text-sm">Welcome, <span className="font-semibold text-gray-800">{userEmail}</span></p>
+          </div>
+          <a
+            href="/dashboard"
+            className="bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-900 transition"
+          >
+            View Dashboard
+          </a>
         </header>
 
         {/* Available Services Section */}
@@ -82,6 +101,7 @@ export default async function Home() {
         <section className="bg-white p-8 rounded-lg shadow-md border border-gray-100">
           <h2 className="text-2xl font-semibold text-gray-800 mb-6">Book an Appointment</h2>
           <form action={handleBookService} className="space-y-4">
+            <input type="hidden" name="email" value={userEmail} />
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Your Name</label>
               <input
@@ -90,16 +110,6 @@ export default async function Home() {
                 required
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-black"
                 placeholder="John Doe"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Your Email</label>
-              <input
-                type="email"
-                name="email"
-                required
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-black"
-                placeholder="john@example.com"
               />
             </div>
             <div>
