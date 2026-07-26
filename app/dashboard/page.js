@@ -1,8 +1,17 @@
 import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
 
-const prisma = new PrismaClient();
+export const dynamic = "force-dynamic";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }) {
+  const params = await searchParams;
+  const userEmail = params?.user || "";
+
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const adapter = new PrismaPg(pool);
+  const prisma = new PrismaClient({ adapter });
+
   let bookings = [];
   try {
     bookings = await prisma.booking.findMany({
@@ -11,21 +20,24 @@ export default async function DashboardPage() {
     });
   } catch (error) {
     console.error("Failed to fetch bookings:", error);
+  } finally {
+    await prisma.$disconnect();
+    await pool.end();
   }
 
   return (
     <main className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-4xl mx-auto">
-        <header className="flex justify-between items-center mb-8">
+        <header className="flex justify-between items-center mb-8 bg-white p-6 rounded-lg shadow-sm border border-gray-100">
           <div>
             <h1 className="text-3xl font-bold text-blue-600">User Dashboard</h1>
-            <p className="text-gray-600">View and manage all service bookings.</p>
+            <p className="text-gray-600 text-sm">Manage your service bookings and appointments.</p>
           </div>
           <a
-            href="/"
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
+            href={`/dashboard?user=${encodeURIComponent(userEmail)}`}
+            className="bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-900 transition"
           >
-            Back to Home
+            View Dashboard
           </a>
         </header>
 
