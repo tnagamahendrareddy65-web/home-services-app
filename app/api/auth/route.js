@@ -1,4 +1,5 @@
-﻿import { PrismaClient } from "@prisma/client";
+﻿import { prisma } from "@/lib/prisma";
+import { PrismaClient } from "@prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { Pool } from "@neondatabase/serverless";
 import { NextResponse } from "next/server";
