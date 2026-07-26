@@ -3,12 +3,20 @@ import { PrismaNeon } from "@prisma/adapter-neon";
 import { Pool } from "@neondatabase/serverless";
 import { NextResponse } from "next/server";
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const adapter = new PrismaNeon(pool);
-const prisma = new PrismaClient({ adapter });
-
 export async function POST(request) {
   try {
+    const connectionString = process.env.DATABASE_URL;
+    if (!connectionString) {
+      return NextResponse.json(
+        { error: "Configuration Error: DATABASE_URL environment variable is missing on Vercel. Please add it in your Vercel Project Settings > Environment Variables." },
+        { status: 500 }
+      );
+    }
+
+    const pool = new Pool({ connectionString });
+    const adapter = new PrismaNeon(pool);
+    const prisma = new PrismaClient({ adapter });
+
     const { name, email, password } = await request.json();
 
     if (!email || !password) {
