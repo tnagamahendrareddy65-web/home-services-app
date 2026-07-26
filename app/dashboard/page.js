@@ -34,10 +34,10 @@ export default async function DashboardPage({ searchParams }) {
             <p className="text-gray-600 text-sm">Manage your service bookings and appointments.</p>
           </div>
           <a
-            href={`/dashboard?user=${encodeURIComponent(userEmail)}`}
-            className="bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-900 transition"
+            href={`/?user=${encodeURIComponent(userEmail)}`}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition"
           >
-            View Dashboard
+            Back to Home
           </a>
         </header>
 
