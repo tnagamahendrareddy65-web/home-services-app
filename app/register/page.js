@@ -17,7 +17,9 @@ export default async function RegisterPage({ searchParams }) {
     const email = formData.get("email");
     const password = formData.get("password");
 
-    if (!email || !password) return;
+    if (!email || !password) {
+      redirect("/register?error=Email+and+password+are+required.");
+    }
 
     try {
       const existingUser = await prisma.user.findUnique({
@@ -41,7 +43,7 @@ export default async function RegisterPage({ searchParams }) {
         throw err;
       }
       console.error("CRITICAL DB ERROR:", err);
-      redirect(`/register?error=${encodeURIComponent(err.message || "Database error occurred")}`);
+      redirect(`/register?error=${encodeURIComponent(err.message || "Database error")}`);
     }
 
     redirect(`/?user=${encodeURIComponent(email)}`);
@@ -57,7 +59,7 @@ export default async function RegisterPage({ searchParams }) {
 
         {errorMsg && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg text-center font-medium">
-            {errorMsg}
+            {decodeURIComponent(errorMsg)}
           </div>
         )}
 
