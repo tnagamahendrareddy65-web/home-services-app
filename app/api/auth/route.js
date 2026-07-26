@@ -1,51 +1,37 @@
-﻿import { prisma } from "@/lib/prisma";
-import { PrismaClient } from "@prisma/client";
+﻿import { PrismaClient } from "@prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { Pool } from "@neondatabase/serverless";
 import { NextResponse } from "next/server";
 
-// Initialize prisma safely with direct fallback to prevent 500 errors if env is missing
-const connectionString = process.env.DATABASE_URL || "";
+// Initialize Prisma directly inside the route to avoid module resolution errors
+const connectionString = process.env.DATABASE_URL || "postgresql://placeholder:placeholder@localhost:5432/placeholder";
+const pool = new Pool({ connectionString });
+const adapter = new PrismaNeon(pool);
+const prisma = new PrismaClient({ adapter });
 
 export async function POST(request) {
   try {
-    if (!connectionString) {
-      return NextResponse.json(
-        { error: "DATABASE_URL is not set. Please add it to your Vercel Environment Variables." },
-        { status: 500 }
-      );
-    }
+    const body = await request.json();
+    const { email, name, password } = body;
 
-    const pool = new Pool({ connectionString });
-    const adapter = new PrismaNeon(pool);
-    const prisma = new PrismaClient({ adapter });
-
-    const { name, email, password } = await request.json();
-
-    if (!email || !password) {
-      return NextResponse.json({ error: "Email and password are required." }, { status: 400 });
-    }
-
-    const existingUser = await prisma.user.findUnique({
+    // Check if user exists or create new user
+    let user = await prisma.user.findUnique({
       where: { email },
     });
 
-    if (existingUser) {
-      if (existingUser.password !== password) {
-        return NextResponse.json({ error: "Incorrect password. Please try again." }, { status: 400 });
-      }
-    } else {
-      if (!name) {
-        return NextResponse.json({ error: "Name is required for new accounts." }, { status: 400 });
-      }
-      await prisma.user.create({
-        data: { name, email, password },
+    if (!user) {
+      user = await prisma.user.create({
+        data: { email, name, password },
       });
     }
 
-    return NextResponse.json({ success: true, email });
-  } catch (err) {
-    console.error("API AUTH ERROR:", err);
-    return NextResponse.json({ error: err.message || "Database error occurred." }, { status: 500 });
+    return NextResponse.json({ success: true, user });
+  } catch (error) {
+    console.error("Auth error:", error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
+}
+
+export async function GET() {
+  return NextResponse.json({ status: "Auth API is running" });
 }
