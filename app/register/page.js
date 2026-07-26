@@ -22,18 +22,15 @@ export default async function RegisterPage({ searchParams }) {
     const prisma = new PrismaClient({ adapter });
 
     try {
-      // Check if user already exists
       const existingUser = await prisma.user.findUnique({
         where: { email },
       });
 
       if (existingUser) {
-        // User exists: verify password
         if (existingUser.password !== password) {
           redirect("/register?error=Incorrect+password.+Please+try+again.");
         }
       } else {
-        // New user: create account
         if (!name) {
           redirect("/register?error=Name+is+required+for+new+accounts.");
         }
@@ -54,7 +51,7 @@ export default async function RegisterPage({ searchParams }) {
       <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-md border border-gray-100">
         <h1 className="text-2xl font-bold text-blue-600 mb-2 text-center">Home Services Platform</h1>
         <p className="text-gray-600 text-sm mb-6 text-center">
-          Enter your email. If you have an account, we will log you in; otherwise, a new account will be created!
+          Enter your details. If you already have an account, you will be logged in; otherwise, a new account will be created.
         </p>
 
         {errorMsg && (
@@ -65,7 +62,7 @@ export default async function RegisterPage({ searchParams }) {
 
         <form action={handleAuth} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name (Required for New Accounts)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name (For New Accounts)</label>
             <input
               type="text"
               name="name"
