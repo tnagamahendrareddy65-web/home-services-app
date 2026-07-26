@@ -1,55 +1,8 @@
-import { PrismaClient } from "@prisma/client";
-import { redirect } from "next/navigation";
-
 export const dynamic = "force-dynamic";
 
 export default async function RegisterPage({ searchParams }) {
   const resolvedParams = await searchParams;
   const errorMsg = resolvedParams?.error;
-
-  async function handleAuth(formData) {
-    "use server";
-    const name = formData.get("name") || "";
-    const email = formData.get("email");
-    const password = formData.get("password");
-
-    if (!email || !password) {
-      redirect("/register?error=Email+and+password+are+required.");
-    }
-
-    let redirectUrl = `/?user=${encodeURIComponent(email)}`;
-
-    const prisma = new PrismaClient();
-    try {
-      const existingUser = await prisma.user.findUnique({
-        where: { email },
-      });
-
-      if (existingUser) {
-        if (existingUser.password !== password) {
-          redirectUrl = "/register?error=Incorrect+password.+Please+try+again.";
-        }
-      } else {
-        if (!name) {
-          redirectUrl = "/register?error=Name+is+required+for+new+accounts.";
-        } else {
-          await prisma.user.create({
-            data: { name, email, password },
-          });
-        }
-      }
-    } catch (err) {
-      console.error("SERVER ACTION ERROR:", err);
-      if (err?.message?.includes("NEXT_REDIRECT")) {
-        throw err;
-      }
-      redirectUrl = `/register?error=${encodeURIComponent(err.message || "Database connection error")}`;
-    } finally {
-      await prisma.$disconnect();
-    }
-
-    redirect(redirectUrl);
-  }
 
   return (
     <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -65,7 +18,7 @@ export default async function RegisterPage({ searchParams }) {
           </div>
         )}
 
-        <form action={handleAuth} className="space-y-4">
+        <form action="/api/auth" method="POST" className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Full Name (For New Accounts)</label>
             <input
