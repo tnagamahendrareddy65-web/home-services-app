@@ -5,22 +5,46 @@ import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-export default async function RegisterPage() {
-  async function handleRegister(formData) {
-    "use server";
-    const name = formData.get("name");
-    const email = formData.get("email");
+export default async function RegisterPage({ searchParams }) {
+  const params = await searchParams;
+  const errorMsg = params?.error;
 
-    if (!name || !email) return;
+  async function handleAuth(formData) {
+    "use server";
+    const name = formData.get("name") || "";
+    const email = formData.get("email");
+    const password = formData.get("password");
+
+    if (!email || !password) return;
 
     const pool = new Pool({ connectionString: process.env.DATABASE_URL });
     const adapter = new PrismaPg(pool);
     const prisma = new PrismaClient({ adapter });
 
-    // For simplicity, save or check user, and store session in cookies or redirect
-    // Here we redirect to the homepage with a query param representing the logged-in user email
-    await prisma.$disconnect();
-    await pool.end();
+    try {
+      // Check if user already exists
+      const existingUser = await prisma.user.findUnique({
+        where: { email },
+      });
+
+      if (existingUser) {
+        // User exists: verify password
+        if (existingUser.password !== password) {
+          redirect("/register?error=Incorrect+password.+Please+try+again.");
+        }
+      } else {
+        // New user: create account
+        if (!name) {
+          redirect("/register?error=Name+is+required+for+new+accounts.");
+        }
+        await prisma.user.create({
+          data: { name, email, password },
+        });
+      }
+    } finally {
+      await prisma.$disconnect();
+      await pool.end();
+    }
 
     redirect(`/?user=${encodeURIComponent(email)}`);
   }
@@ -28,16 +52,23 @@ export default async function RegisterPage() {
   return (
     <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-md border border-gray-100">
-        <h1 className="text-2xl font-bold text-blue-600 mb-2 text-center">Welcome to Home Services</h1>
-        <p className="text-gray-600 text-sm mb-6 text-center">Please register your account to continue.</p>
-        
-        <form action={handleRegister} className="space-y-4">
+        <h1 className="text-2xl font-bold text-blue-600 mb-2 text-center">Home Services Platform</h1>
+        <p className="text-gray-600 text-sm mb-6 text-center">
+          Enter your email. If you have an account, we will log you in; otherwise, a new account will be created!
+        </p>
+
+        {errorMsg && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg text-center font-medium">
+            {errorMsg}
+          </div>
+        )}
+
+        <form action={handleAuth} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name (Required for New Accounts)</label>
             <input
               type="text"
               name="name"
-              required
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-black"
               placeholder="John Doe"
             />
@@ -52,11 +83,21 @@ export default async function RegisterPage() {
               placeholder="john@example.com"
             />
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <input
+              type="password"
+              name="password"
+              required
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-black"
+              placeholder="••••••••"
+            />
+          </div>
           <button
             type="submit"
             className="w-full bg-blue-600 text-white font-semibold p-3 rounded-lg hover:bg-blue-700 transition"
           >
-            Register & Continue
+            Continue to Platform
           </button>
         </form>
       </div>
