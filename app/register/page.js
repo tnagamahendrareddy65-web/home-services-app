@@ -1,9 +1,10 @@
 import { PrismaClient } from "@prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
-import { Pool } from "pg";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
+
+const prisma = global.prisma || new PrismaClient();
+if (process.env.NODE_ENV !== "production") global.prisma = prisma;
 
 export default async function RegisterPage({ searchParams }) {
   const resolvedParams = await searchParams;
@@ -16,10 +17,6 @@ export default async function RegisterPage({ searchParams }) {
     const password = formData.get("password");
 
     if (!email || !password) return;
-
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-    const adapter = new PrismaPg(pool);
-    const prisma = new PrismaClient({ adapter });
 
     try {
       const existingUser = await prisma.user.findUnique({
@@ -40,13 +37,10 @@ export default async function RegisterPage({ searchParams }) {
       }
     } catch (err) {
       if (err.message?.includes("NEXT_REDIRECT")) {
-        throw err; // Allow Next.js redirects to work normally
+        throw err;
       }
       console.error("AUTH ERROR:", err);
       redirect("/register?error=A+database+error+occurred.+Please+try+again.");
-    } finally {
-      await prisma.$disconnect();
-      await pool.end();
     }
 
     redirect(`/?user=${encodeURIComponent(email)}`);
