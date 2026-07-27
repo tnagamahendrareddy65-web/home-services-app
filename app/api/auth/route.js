@@ -35,3 +35,4 @@ export async function POST(request) {
 export async function GET() {
   return NextResponse.json({ status: "Auth API is running" });
 }
+// force refresh
